@@ -13,10 +13,11 @@ CROP_NAMES = {
     u'广州简悦晚餐':  u'麻辣牛辗饭',
 }
 
-browser = webdriver.Firefox()
+browser = None
 
 
 def login(user, password):
+    browser.get('http://meican.com/login')
     browser.find_element_by_id("email").send_keys(user)
     browser.find_element_by_id("password").send_keys(password)
     browser.find_element_by_id("signin").click()
@@ -51,17 +52,16 @@ def order(foodname):
     WebDriverWait(browser, 10).until(is_search_done)
 
     foods = browser.find_elements_by_css_selector(".name_outer .name")
-    print len(foods)
     for i in foods:
         if i.text.find(foodname) != -1:
             i.click()
+            WebDriverWait(browser, 10).until(
+                lambda x: x.find_element_by_id('cart').is_displayed())
             return
     raise Exception('order')
 
 
 def set_address(address_keyword):
-    WebDriverWait(browser, 10).until(
-        lambda x: x.find_element_by_id('cart').is_displayed())
     browser.find_element_by_id("cart").click()
     WebDriverWait(browser, 10).until(
         lambda x: x.find_element_by_id('corp_add_order_btn').is_displayed())
@@ -80,8 +80,13 @@ def submit():
         lambda x: x.find_element_by_id('corp_order_actions').is_displayed())
 
 
-def main():
-    browser.get('http://meican.com/login')
+def open_driver():
+    global browser
+    browser = webdriver.PhantomJS()
+    browser.set_window_size(1024, 768)
+
+
+def run():
     login(USER, PASSWD)
     for k in CROP_NAMES:
         browser.get('http://meican.com')
@@ -89,6 +94,14 @@ def main():
         order(CROP_NAMES[k])
         set_address(ADDRESS_KEYWORD)
         submit()
+
+
+def main():
+    open_driver()
+    try:
+        run()
+    except:
+        pass
 
     browser.quit()
 
